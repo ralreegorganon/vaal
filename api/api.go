@@ -23,8 +23,20 @@ func NewHTTPServer(administrator contract.Administrator) *HTTPServer {
 
 func CreateRoutes(server contract.Server) *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/replays/{id:[0-9]+}", server.GetReplay).Methods("GET")
+	r.HandleFunc("/replays/{id:[0-9]+}", addDefaultHeaders(server.GetReplay)).Methods("GET")
 	return r
+}
+
+func addDefaultHeaders(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		fn(w, r)
+	}
 }
 
 func (self *HTTPServer) GetReplay(w http.ResponseWriter, r *http.Request) {

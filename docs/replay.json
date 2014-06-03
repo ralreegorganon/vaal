@@ -1,0 +1,30 @@
+{
+    "arena": {
+        "height": 400,
+        "seed": 12301203141,
+        "width": 400
+    },
+    "id": 1,
+    "robots": [
+        {
+            "id": 0,
+            "name": "DerpBot"
+        }
+    ],
+    "ticks": [
+        {
+            "robotStates": [
+                {
+                    "energy": 100,
+                    "gunHeading": 0,
+                    "heading": 0,
+                    "id": 0,
+                    "radarHeading": 0,
+                    "x": 10,
+                    "y": 20
+                }
+            ],
+            "time": 0
+        }
+    ]
+}
