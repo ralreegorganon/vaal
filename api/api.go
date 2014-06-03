@@ -45,9 +45,15 @@ func (self *HTTPServer) GetReplay(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	thing := self.administrator.GetReplayById(id)
+
+	if thing == nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	writeJSON(w, thing)
 }
