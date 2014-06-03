@@ -1,5 +1,5 @@
 package models
 
 type Replay struct {
-	Id int64 `json"id"`
+	Id int `json"id"`
 }
