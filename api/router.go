@@ -8,6 +8,6 @@ import (
 
 func CreateRoutes() {
 	r := mux.NewRouter()
-	r.HandleFunc("/replays/{id}", GetReplay).Methods("GET")
+	r.HandleFunc("/replays/{id:[0-9]+}", GetReplay).Methods("GET")
 	http.Handle("/", r)
 }
