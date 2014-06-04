@@ -53,10 +53,10 @@ type ServerFixture struct {
 }
 
 func newServerFixture() *ServerFixture {
-	self := new(ServerFixture)
+	self := &ServerFixture{}
 	self.administrator = newFakeAdministrator()
 	self.server = NewHTTPServer(self.administrator)
-	self.router = CreateRoutes(self.server)
+	self.router, _ = CreateRouter(self.server)
 	return self
 }
 
@@ -68,7 +68,7 @@ func (self *ServerFixture) GetReplayById(id int) (int, *models.Replay) {
 
 	if response.Code == http.StatusOK {
 		decoder := json.NewDecoder(strings.NewReader(response.Body.String()))
-		replay := new(models.Replay)
+		replay := &models.Replay{}
 		decoder.Decode(replay)
 		return response.Code, replay
 	}
@@ -80,7 +80,7 @@ type FakeAdministrator struct {
 }
 
 func newFakeAdministrator() *FakeAdministrator {
-	return new(FakeAdministrator)
+	return &FakeAdministrator{}
 }
 
 func (self *FakeAdministrator) GetReplayById(id int) *models.Replay {

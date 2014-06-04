@@ -1,4 +1,4 @@
-package administrator
+package api
 
 import (
 	"encoding/json"

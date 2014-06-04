@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"encoding/json"
@@ -6,16 +6,16 @@ import (
 	"io/ioutil"
 )
 
-type Config struct {
+type config struct {
 	URL string `json:"url"`
 }
 
-var Conf Config
+var conf Config
 
 func init() {
 	configFile, err := ioutil.ReadFile("./config.json")
 	if err != nil {
 		fmt.Printf("File error: %v\n", err)
 	}
-	json.Unmarshal(configFile, &Conf)
+	json.Unmarshal(configFile, &conf)
 }
