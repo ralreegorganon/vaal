@@ -8,8 +8,10 @@ import (
 
 type Server interface {
 	GetReplay(writer http.ResponseWriter, request *http.Request, vars map[string]string) error
+	JoinMatch(writer http.ResponseWriter, request *http.Request, vars map[string]string) error
 }
 
 type Administrator interface {
-	GetReplayById(id int) *models.Replay
+	GetReplayById(id int) (*models.Replay, error)
+	JoinMatch(endpoint string) error
 }

@@ -33,17 +33,21 @@ func NewAdministrator() *Administrator {
 	return &Administrator{db: db}
 }
 
-func (self *Administrator) GetReplayById(id int) *models.Replay {
+func (self *Administrator) GetReplayById(id int) (*models.Replay, error) {
 	jsonContainer := &jsonContainer{}
 
 	err := self.db.Get(jsonContainer, "select data from replays where replay_id = $1", id)
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, err
 	}
 
 	replay := &models.Replay{}
 	json.Unmarshal([]byte(jsonContainer.Data), replay)
 
-	return replay
+	return replay, nil
+}
+
+func (self *Administrator) JoinMatch(endpoint string) error {
+	return nil
 }

@@ -15,6 +15,9 @@ func CreateRouter(server contracts.Server) (*mux.Router, error) {
 		"GET": {
 			"/replays/{id:[0-9]+}": server.GetReplay,
 		},
+		"POST": {
+			"/join": server.JoinMatch,
+		},
 	}
 
 	for method, routes := range m {
@@ -82,14 +85,34 @@ func (self *HTTPServer) GetReplay(w http.ResponseWriter, r *http.Request, vars m
 		return err
 	}
 
-	thing := self.administrator.GetReplayById(id)
+	thing, err := self.administrator.GetReplayById(id)
 
-	if thing == nil {
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return nil
 	}
 
 	writeJSON(w, http.StatusOK, thing)
 
+	return nil
+}
+
+func (self *HTTPServer) JoinMatch(w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	decoder := json.NewDecoder(r.Body)
+	message := &joinMatchMessage{}
+
+	err := decoder.Decode(message)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return err
+	}
+
+	err = self.administrator.JoinMatch(message.Endpoint)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return err
+	}
+
+	w.WriteHeader(http.StatusOK)
 	return nil
 }
