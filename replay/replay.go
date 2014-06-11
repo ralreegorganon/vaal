@@ -1,4 +1,4 @@
-package models
+package replay
 
 type Replay struct {
 	Id     int     `json:"id"`

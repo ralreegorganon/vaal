@@ -7,11 +7,15 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/ralreegorganon/vaal/models"
+	"github.com/ralreegorganon/vaal/endpoint"
+	"github.com/ralreegorganon/vaal/engine"
+	"github.com/ralreegorganon/vaal/replay"
+	"github.com/satori/go.uuid"
 )
 
 type Administrator struct {
-	db *sqlx.DB
+	db            *sqlx.DB
+	activeMatches map[string]*engine.Match
 }
 
 type jsonContainer struct {
@@ -30,24 +34,75 @@ func NewAdministrator() *Administrator {
 		log.Fatalln(err)
 	}
 
-	return &Administrator{db: db}
+	m := make(map[string]*engine.Match)
+
+	return &Administrator{db: db, activeMatches: m}
 }
 
-func (self *Administrator) GetReplayById(id int) (*models.Replay, error) {
+func (a *Administrator) GetReplayById(id int) (*replay.Replay, error) {
 	jsonContainer := &jsonContainer{}
 
-	err := self.db.Get(jsonContainer, "select data from replays where replay_id = $1", id)
+	err := a.db.Get(jsonContainer, "select data from replays where replay_id = $1", id)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	replay := &models.Replay{}
+	replay := &replay.Replay{}
 	json.Unmarshal([]byte(jsonContainer.Data), replay)
 
 	return replay, nil
 }
 
-func (self *Administrator) JoinMatch(endpoint string) error {
+func (a *Administrator) JoinMatch(root, match string) error {
+	e := &endpoint.Endpoint{
+		Root: root,
+	}
+
+	err := e.Validate()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := a.activeMatches[match]; !ok {
+		m := &engine.Match{}
+		err = a.db.Get(m, "select match from matches where match = $1", match)
+		if err != nil {
+			return err
+		}
+		m.Endpoints = make([]*endpoint.Endpoint, 0)
+		a.activeMatches[match] = m
+	}
+
+	m := a.activeMatches[match]
+	m.Endpoints = append(m.Endpoints, e)
+
+	return nil
+}
+
+func (a *Administrator) CreateMatch() (string, error) {
+	u := uuid.NewV4().String()
+
+	_, err := a.db.Exec("insert into matches (match) values ($1)", u)
+
+	if err != nil {
+		return "", err
+	}
+
+	m := &engine.Match{}
+
+	err = a.db.Get(m, "select match from matches where match = $1", u)
+	if err != nil {
+		return "", err
+	}
+
+	return m.Match, nil
+}
+
+func (a *Administrator) StartMatch(match string) error {
+	if m, ok := a.activeMatches[match]; ok {
+		go m.Start()
+	}
+
 	return nil
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -16,7 +17,9 @@ func CreateRouter(server contracts.Server) (*mux.Router, error) {
 			"/replays/{id:[0-9]+}": server.GetReplay,
 		},
 		"POST": {
-			"/join": server.JoinMatch,
+			"/join":   server.JoinMatch,
+			"/create": server.CreateMatch,
+			"/start":  server.StartMatch,
 		},
 	}
 
@@ -75,6 +78,7 @@ func httpError(w http.ResponseWriter, err error) {
 	statusCode := http.StatusInternalServerError
 
 	if err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), statusCode)
 	}
 }
@@ -99,7 +103,7 @@ func (self *HTTPServer) GetReplay(w http.ResponseWriter, r *http.Request, vars m
 
 func (self *HTTPServer) JoinMatch(w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	decoder := json.NewDecoder(r.Body)
-	message := &joinMatchMessage{}
+	message := &joinMatchRequestMessage{}
 
 	err := decoder.Decode(message)
 	if err != nil {
@@ -107,12 +111,49 @@ func (self *HTTPServer) JoinMatch(w http.ResponseWriter, r *http.Request, vars m
 		return err
 	}
 
-	err = self.administrator.JoinMatch(message.Endpoint)
+	err = self.administrator.JoinMatch(message.Endpoint, message.Match)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return err
 	}
 
 	w.WriteHeader(http.StatusOK)
+	return nil
+}
+
+func (self *HTTPServer) CreateMatch(w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	match, err := self.administrator.CreateMatch()
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return err
+	}
+
+	thing := &createMatchResponseMessage{
+		Match: match,
+	}
+
+	writeJSON(w, http.StatusOK, thing)
+
+	return nil
+}
+
+func (self *HTTPServer) StartMatch(w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	decoder := json.NewDecoder(r.Body)
+	message := &startMatchRequestMessage{}
+
+	err := decoder.Decode(message)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return err
+	}
+
+	err = self.administrator.StartMatch(message.Match)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return err
+	}
+
+	w.WriteHeader(http.StatusOK)
+
 	return nil
 }
