@@ -25,12 +25,37 @@ func (a *Arena) Tick() {
 	log.Println("Tick ", a.Time)
 
 	for _, r := range a.Robots {
-		r.Think()
+		if !r.State.Alive {
+			continue
+		}
+		r.Scan()
 	}
 
 	// Send current state to each robot and receive commands from each robot
+	toProcess := make(map[*Robot]*common.RobotCommands, 0)
+	for _, r := range a.Robots {
+		if !r.State.Alive {
+			continue
+		}
+		commands := r.Think()
+		if commands != nil {
+			toProcess[r] = commands
+		}
+	}
 
 	// Apply commands for each robot
+	for r, c := range toProcess {
+		if !r.State.Alive {
+			continue
+		}
+		r.Tick(c)
+	}
+
+	// Constrain
+	for _, r := range a.Robots {
+		r.State.Position.X = clamp(r.State.Position.X, 0, float64(a.Width))
+		r.State.Position.Y = clamp(r.State.Position.Y, 0, float64(a.Height))
+	}
 
 	// Update overall state
 	a.Time += 1
@@ -112,6 +137,39 @@ func NewRobot(arena *Arena, endpoint *endpoint.Endpoint) *Robot {
 	return r
 }
 
+func (r *Robot) Tick(commands *common.RobotCommands) {
+	r.Scan()
+
+	if commands.Fire != 0 {
+		r.Fire(commands.Fire)
+	}
+	if commands.Turn != 0 {
+		r.Turn(commands.Turn)
+	}
+	if commands.TurnGun != 0 {
+		r.TurnGun(commands.TurnGun)
+	}
+	if commands.TurnRadar != 0 {
+		r.TurnRadar(commands.TurnRadar)
+	}
+	if commands.Accelerate != 0 {
+		r.Accelerate(commands.Accelerate)
+	}
+
+	r.Cool()
+
+	r.State.Position.X += math.Sin(r.State.Heading*math.Pi/180) * r.State.Velocity
+	r.State.Position.Y += math.Cos(r.State.Heading*math.Pi/180) * r.State.Velocity
+}
+
+func (r *Robot) Scan() {
+}
+
+func (r *Robot) Cool() {
+	cooled := r.State.Heat - 0.1
+	r.State.Heat = clamp(cooled, 0, cooled)
+}
+
 func (r *Robot) Turn(degrees float64) {
 	d := clamp(degrees, -10, 10)
 	r.State.Heading += d
@@ -146,22 +204,20 @@ func (r *Robot) Accelerate(velocity float64) {
 func (r *Robot) Fire(energy float64) {
 }
 
-func (r *Robot) Tick() {
-}
-
-func (r *Robot) Think() {
-	if r.State.Alive {
-		log.Printf("%v thinking...", r.AI.Root)
-		err := r.AI.Think(r.State)
-		if err != nil {
-			log.Printf("%v error from %v, killing it", err, r.AI.Root)
-			r.State.Alive = false
-		}
+func (r *Robot) Think() *common.RobotCommands {
+	log.Printf("%v thinking...", r.AI.Root)
+	log.Printf("%+v\n", r.State)
+	commands, err := r.AI.Think(r.State)
+	if err != nil {
+		log.Printf("%v error from %v, killing it", err, r.AI.Root)
+		r.State.Alive = false
+		return nil
 	}
+	return commands
 }
 
 func clamp(val, min, max float64) float64 {
-	return math.Min(math.Max(val, min), max)
+	return math.Max(math.Min(val, max), min)
 }
 
 type Match struct {

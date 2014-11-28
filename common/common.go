@@ -7,8 +7,16 @@ type RobotState struct {
 	RadarHeading float64 `json:"radarHeading"`
 	Velocity     float64 `json:"velocity"`
 	Heat         float64 `json:"heat"`
-	Health       float64 `health:"health"`
-	Alive        bool    `health:"health"`
+	Health       float64 `json:"health"`
+	Alive        bool    `json:"alive"`
+}
+
+type RobotCommands struct {
+	Turn       float64 `json:"turn"`
+	TurnGun    float64 `json:"turnGun"`
+	TurnRadar  float64 `json:"turnRadar"`
+	Accelerate float64 `json:"accelerate"`
+	Fire       float64 `json:"fire"`
 }
 
 type Point struct {
