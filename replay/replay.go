@@ -1,7 +1,7 @@
 package replay
 
 type Replay struct {
-	Id     int     `json:"id"`
+	Match  string  `json:"match"`
 	Arena  Arena   `json:"arena"`
 	Robots []Robot `json:"robots"`
 	Ticks  []Tick  `json:"ticks"`
@@ -13,9 +13,9 @@ type Tick struct {
 }
 
 type Arena struct {
-	Height int `json:"height"`
-	Width  int `json:"width"`
-	Seed   int `json:"seed"`
+	Height int   `json:"height"`
+	Width  int   `json:"width"`
+	Seed   int64 `json:"seed"`
 }
 
 type Robot struct {

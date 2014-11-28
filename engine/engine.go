@@ -4,13 +4,15 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/ralreegorganon/vaal/common"
 	"github.com/ralreegorganon/vaal/endpoint"
+	"github.com/ralreegorganon/vaal/replay"
 )
 
 type Arena struct {
-	Id       int
+	Match    string
 	Height   int
 	Width    int
 	Seed     int64
@@ -19,6 +21,30 @@ type Arena struct {
 	Finished bool
 	Robots   []*Robot
 	RNG      *rand.Rand
+}
+
+func NewArena(match string, endpoints []*endpoint.Endpoint) *Arena {
+	a := &Arena{
+		Match:    match,
+		Height:   800,
+		Width:    800,
+		Seed:     time.Now().Unix(),
+		Time:     0,
+		Timeout:  10,
+		Finished: false,
+		Robots:   make([]*Robot, 0),
+	}
+
+	s := rand.NewSource(a.Seed)
+	a.RNG = rand.New(s)
+
+	for i, ep := range endpoints {
+		r := NewRobot(a, ep)
+		r.Id = i
+		a.Robots = append(a.Robots, r)
+	}
+
+	return a
 }
 
 func (a *Arena) Tick() {
@@ -76,30 +102,7 @@ func (a *Arena) Tick() {
 }
 
 func (a *Arena) RandomPoint() *common.Point {
-
 	return nil
-}
-
-func NewArena(endpoints []*endpoint.Endpoint) *Arena {
-	a := &Arena{
-		Id:       0,
-		Height:   800,
-		Width:    800,
-		Seed:     0,
-		Time:     0,
-		Timeout:  10,
-		Finished: false,
-	}
-
-	s := rand.NewSource(a.Seed)
-	a.RNG = rand.New(s)
-
-	for _, ep := range endpoints {
-		r := NewRobot(a, ep)
-		a.Robots = append(a.Robots, r)
-	}
-
-	return a
 }
 
 type Robot struct {
@@ -124,7 +127,7 @@ func NewRobot(arena *Arena, endpoint *endpoint.Endpoint) *Robot {
 		RadarHeading: initialHeading,
 		Heat:         0,
 		Velocity:     0,
-		Health:       100,
+		Energy:       100,
 		Alive:        true,
 	}
 
@@ -223,12 +226,64 @@ func clamp(val, min, max float64) float64 {
 type Match struct {
 	Match     string
 	Endpoints []*endpoint.Endpoint
+	Replay    *replay.Replay
 }
 
 func (m *Match) Start() {
-	a := NewArena(m.Endpoints)
+	a := NewArena(m.Match, m.Endpoints)
 
+	m.SetupReplayForArena(a)
+
+	m.UpdateReplayForTick(a)
 	for !a.Finished {
 		a.Tick()
+		m.UpdateReplayForTick(a)
 	}
+	log.Println("------------------------------------match done")
+}
+
+func (m *Match) SetupReplayForArena(arena *Arena) {
+	m.Replay = &replay.Replay{
+		Match: arena.Match,
+		Arena: replay.Arena{
+			Width:  arena.Width,
+			Height: arena.Height,
+			Seed:   arena.Seed,
+		},
+		Robots: make([]replay.Robot, 0),
+		Ticks:  make([]replay.Tick, 0),
+	}
+
+	for _, r := range arena.Robots {
+		log.Printf("%+v\n", r)
+		b := replay.Robot{
+			Id:   r.Id,
+			Name: r.Name,
+		}
+		m.Replay.Robots = append(m.Replay.Robots, b)
+	}
+}
+
+func (m *Match) UpdateReplayForTick(arena *Arena) {
+	t := replay.Tick{
+		Time:        arena.Time,
+		RobotStates: make([]replay.RobotState, 0),
+	}
+
+	for _, r := range arena.Robots {
+		s := replay.RobotState{
+			Id: r.Id,
+			Position: replay.Point{
+				X: r.State.Position.X,
+				Y: r.State.Position.Y,
+			},
+			Heading:      r.State.Heading,
+			GunHeading:   r.State.GunHeading,
+			RadarHeading: r.State.RadarHeading,
+			Energy:       r.State.Energy,
+		}
+		t.RobotStates = append(t.RobotStates, s)
+	}
+
+	m.Replay.Ticks = append(m.Replay.Ticks, t)
 }

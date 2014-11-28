@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"time"
 
@@ -69,12 +68,9 @@ func (e *Endpoint) Think(state *common.RobotState) (*common.RobotCommands, error
 		log.Println("OK")
 	}
 
-	o, _ := httputil.DumpResponse(r, true)
-	log.Println(string(o))
 	decoder := json.NewDecoder(r.Body)
 	message := &common.RobotCommands{}
 	err = decoder.Decode(message)
-	log.Printf("GOT SOME: %+v\n", message)
 	if err != nil {
 		log.Println(err)
 		return nil, err

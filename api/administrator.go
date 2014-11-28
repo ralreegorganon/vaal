@@ -65,6 +65,7 @@ func (a *Administrator) JoinMatch(root, match string) error {
 	}
 
 	if _, ok := a.activeMatches[match]; !ok {
+		log.Println("match doesn't exist in memory, getting it")
 		m := &engine.Match{}
 		err = a.db.Get(m, "select match from matches where match = $1", match)
 		if err != nil {
@@ -101,7 +102,14 @@ func (a *Administrator) CreateMatch() (string, error) {
 
 func (a *Administrator) StartMatch(match string) error {
 	if m, ok := a.activeMatches[match]; ok {
-		go m.Start()
+		go func() {
+			m.Start()
+			text, err := json.Marshal(m.Replay)
+			if err != nil {
+				log.Println(err)
+			}
+			a.db.Exec("insert into replays (data) values ($1)", text)
+		}()
 	}
 
 	return nil
