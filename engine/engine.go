@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 
+	"github.com/ralreegorganon/vaal/common"
 	"github.com/ralreegorganon/vaal/endpoint"
 )
 
@@ -36,9 +37,20 @@ func (a *Arena) Tick() {
 	if a.Time >= a.Timeout {
 		a.Finished = true
 	}
+
+	alive := 0
+	for _, r := range a.Robots {
+		if r.State.Alive {
+			alive++
+		}
+	}
+
+	if alive <= 1 {
+		a.Finished = true
+	}
 }
 
-func (a *Arena) RandomPoint() *Point {
+func (a *Arena) RandomPoint() *common.Point {
 
 	return nil
 }
@@ -68,19 +80,19 @@ func NewArena(endpoints []*endpoint.Endpoint) *Arena {
 type Robot struct {
 	Id    int
 	Name  string
-	State RobotState
+	State *common.RobotState
 	AI    *endpoint.Endpoint
 }
 
 func NewRobot(arena *Arena, endpoint *endpoint.Endpoint) *Robot {
-	p := Point{
+	p := common.Point{
 		X: float64(arena.RNG.Intn(arena.Width)),
 		Y: float64(arena.RNG.Intn(arena.Height)),
 	}
 
 	initialHeading := float64(arena.RNG.Intn(360))
 
-	rs := RobotState{
+	rs := &common.RobotState{
 		Position:     p,
 		Heading:      initialHeading,
 		GunHeading:   initialHeading,
@@ -138,27 +150,18 @@ func (r *Robot) Tick() {
 }
 
 func (r *Robot) Think() {
-	log.Printf("%v thinking...", r.AI.Root)
+	if r.State.Alive {
+		log.Printf("%v thinking...", r.AI.Root)
+		err := r.AI.Think(r.State)
+		if err != nil {
+			log.Printf("%v error from %v, killing it", err, r.AI.Root)
+			r.State.Alive = false
+		}
+	}
 }
 
 func clamp(val, min, max float64) float64 {
 	return math.Min(math.Max(val, min), max)
-}
-
-type RobotState struct {
-	Position     Point
-	Heading      float64
-	GunHeading   float64
-	RadarHeading float64
-	Velocity     float64
-	Heat         float64
-	Health       float64
-	Alive        bool
-}
-
-type Point struct {
-	X float64
-	Y float64
 }
 
 type Match struct {
