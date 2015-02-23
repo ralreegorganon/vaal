@@ -30,7 +30,7 @@ func NewArena(match string, endpoints []*endpoint.Endpoint) *Arena {
 		Width:    800,
 		Seed:     time.Now().Unix(),
 		Time:     0,
-		Timeout:  10,
+		Timeout:  2000,
 		Finished: false,
 		Robots:   make([]*Robot, 0),
 	}
@@ -122,7 +122,7 @@ func NewRobot(arena *Arena, endpoint *endpoint.Endpoint) *Robot {
 
 	rs := &common.RobotState{
 		Position:     p,
-		Heading:      initialHeading,
+		Heading:      0,
 		GunHeading:   initialHeading,
 		RadarHeading: initialHeading,
 		Heat:         0,
@@ -162,7 +162,7 @@ func (r *Robot) Tick(commands *common.RobotCommands) {
 	r.Cool()
 
 	r.State.Position.X += math.Sin(r.State.Heading*math.Pi/180) * r.State.Velocity
-	r.State.Position.Y += math.Cos(r.State.Heading*math.Pi/180) * r.State.Velocity
+	r.State.Position.Y += -math.Cos(r.State.Heading*math.Pi/180) * r.State.Velocity
 }
 
 func (r *Robot) Scan() {
