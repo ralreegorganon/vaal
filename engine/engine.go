@@ -31,7 +31,7 @@ func NewArena(match string, endpoints []*endpoint.Endpoint) *Arena {
 		Width:    800,
 		Seed:     time.Now().Unix(),
 		Time:     0,
-		Timeout:  2000,
+		Timeout:  100000,
 		Finished: false,
 		Robots:   make([]*Robot, 0),
 		Bullets:  make([]*Bullet, 0),
@@ -190,6 +190,7 @@ func (r *Robot) Tick(commands *common.RobotCommands, arena *Arena) {
 func (r *Robot) Hit(bullet *Bullet) {
 	r.State.Energy -= bullet.Firepower
 	if r.State.Energy <= 0 {
+		r.State.Energy = 0
 		r.State.Alive = false
 	}
 	// damage taken event
