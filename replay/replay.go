@@ -8,8 +8,9 @@ type Replay struct {
 }
 
 type Tick struct {
-	Time        int          `json:"time"`
-	RobotStates []RobotState `json:"robotStates"`
+	Time         int           `json:"time"`
+	RobotStates  []RobotState  `json:"robotStates"`
+	BulletStates []BulletState `json:"bulletStates"`
 }
 
 type Arena struct {
@@ -30,6 +31,10 @@ type RobotState struct {
 	GunHeading   float64 `json:"gunHeading"`
 	RadarHeading float64 `json:"radarHeading"`
 	Energy       float64 `json:"energy"`
+}
+
+type BulletState struct {
+	Position Point `json:"position"`
 }
 
 type Point struct {
