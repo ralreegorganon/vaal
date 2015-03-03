@@ -13,4 +13,4 @@ create index match_id_index
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
-drop table match_id;
+drop table matches;

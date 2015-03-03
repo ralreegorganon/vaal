@@ -273,12 +273,23 @@ func clamp(val, min, max float64) float64 {
 
 type Match struct {
 	Match     string
+	Open      bool
+	Complete  bool
 	Endpoints []*endpoint.Endpoint
 	Replay    *replay.Replay
 }
 
 func (m *Match) Start() {
 	a := NewArena(m.Match, m.Endpoints)
+
+	arenaMetadata := &common.Arena{
+		Width:  a.Width,
+		Height: a.Height,
+	}
+
+	for _, r := range a.Robots {
+		r.AI.Start(arenaMetadata)
+	}
 
 	m.SetupReplayForArena(a)
 
@@ -287,6 +298,11 @@ func (m *Match) Start() {
 		a.Tick()
 		m.UpdateReplayForTick(a)
 	}
+
+	for _, r := range a.Robots {
+		r.AI.End(r.State.Alive)
+	}
+
 	log.Println("------------------------------------match done")
 }
 

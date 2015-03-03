@@ -45,6 +45,57 @@ func (e *Endpoint) Status() error {
 	return nil
 }
 
+func (e *Endpoint) Start(a *common.Arena) error {
+	u, err := url.Parse(e.Root)
+	if err != nil {
+		return err
+	}
+
+	u.Path = "start"
+
+	log.Println("Making request to ", u.String())
+	js, _ := json.Marshal(a)
+	r, err := http.Post(u.String(), "application/json", bytes.NewBuffer(js))
+	if err != nil {
+		return err
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("expected HTTP 200 - OK, got %v", r.StatusCode))
+	} else {
+		log.Println("OK")
+	}
+
+	return nil
+}
+
+func (e *Endpoint) End(won bool) error {
+	u, err := url.Parse(e.Root)
+	if err != nil {
+		return err
+	}
+
+	u.Path = "end"
+
+	log.Println("Making request to ", u.String())
+	m := &endMatchRequestMessage{
+		Won: won,
+	}
+	js, _ := json.Marshal(m)
+	r, err := http.Post(u.String(), "application/json", bytes.NewBuffer(js))
+	if err != nil {
+		return err
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("expected HTTP 200 - OK, got %v", r.StatusCode))
+	} else {
+		log.Println("OK")
+	}
+
+	return nil
+}
+
 func (e *Endpoint) Think(state *common.RobotState) (*common.RobotCommands, error) {
 	timeout := time.Duration(5 * time.Second)
 	client := http.Client{
