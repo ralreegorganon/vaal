@@ -22,6 +22,15 @@ type Arena struct {
 	Robots   []*Robot
 	Bullets  []*Bullet
 	RNG      *rand.Rand
+	Events   Events
+}
+
+type Events struct {
+	ExplosionEvents []ExplosionEvent
+}
+
+type ExplosionEvent struct {
+	Position common.Point
 }
 
 func NewArena(match string, endpoints []*endpoint.Endpoint) *Arena {
@@ -35,6 +44,9 @@ func NewArena(match string, endpoints []*endpoint.Endpoint) *Arena {
 		Finished: false,
 		Robots:   make([]*Robot, 0),
 		Bullets:  make([]*Bullet, 0),
+		Events: Events{
+			ExplosionEvents: make([]ExplosionEvent, 0),
+		},
 	}
 
 	s := rand.NewSource(a.Seed)
@@ -51,6 +63,8 @@ func NewArena(match string, endpoints []*endpoint.Endpoint) *Arena {
 
 func (a *Arena) Tick() {
 	log.Println("Tick ", a.Time)
+
+	a.Events.ExplosionEvents = make([]ExplosionEvent, 0)
 
 	for _, r := range a.Robots {
 		if !r.State.Alive {
@@ -125,6 +139,13 @@ func (a *Arena) RandomPoint() common.Point {
 
 func (a *Arena) AddBullet(bullet *Bullet) {
 	a.Bullets = append(a.Bullets, bullet)
+}
+
+func (a *Arena) AddExplosion(p common.Point) {
+	ee := ExplosionEvent{
+		Position: p,
+	}
+	a.Events.ExplosionEvents = append(a.Events.ExplosionEvents, ee)
 }
 
 type Robot struct {
@@ -333,6 +354,9 @@ func (m *Match) UpdateReplayForTick(arena *Arena) {
 		Time:         arena.Time,
 		RobotStates:  make([]replay.RobotState, 0),
 		BulletStates: make([]replay.BulletState, 0),
+		Events: replay.TickEvents{
+			ExplosionEvents: make([]replay.ExplosionEvent, 0),
+		},
 	}
 
 	for _, r := range arena.Robots {
@@ -358,6 +382,16 @@ func (m *Match) UpdateReplayForTick(arena *Arena) {
 			},
 		}
 		t.BulletStates = append(t.BulletStates, s)
+	}
+
+	for _, e := range arena.Events.ExplosionEvents {
+		ee := replay.ExplosionEvent{
+			Position: replay.Point{
+				X: e.Position.X,
+				Y: e.Position.Y,
+			},
+		}
+		t.Events.ExplosionEvents = append(t.Events.ExplosionEvents, ee)
 	}
 
 	m.Replay.Ticks = append(m.Replay.Ticks, t)
@@ -387,6 +421,7 @@ func (b *Bullet) Tick(arena *Arena) {
 		if r != b.Origin && r.State.Alive {
 			if math.Hypot(b.Position.Y-r.State.Position.Y, r.State.Position.X-b.Position.X) < 40 {
 				b.Alive = false
+				arena.AddExplosion(b.Position)
 				r.Hit(b)
 			}
 		}
